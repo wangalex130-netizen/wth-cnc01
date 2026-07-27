@@ -6,7 +6,7 @@ import '../services/framing_service.dart';
 class FramingModal extends StatefulWidget {
   final GcodePath gcodePath;
 
-  const FramingModal({Super.key, required this.gcodePath});
+  const FramingModal({super.key, required this.gcodePath}); // 修正为小写 super.key
 
   static void show({
     required BuildContext context,
@@ -27,9 +27,9 @@ class FramingModal extends StatefulWidget {
 }
 
 class _FramingModalState extends State<FramingModal> {
-  double _safeZ = 5.0; // 默认抬刀 5mm
-  double _speed = 1200.0; // 跑框速度 1200 mm/min
-  bool _useLaser = true; // 默认开启定位红光
+  double _safeZ = 5.0;
+  double _speed = 1200.0;
+  bool _useLaser = true;
   FramingService? _framingService;
 
   @override
@@ -79,8 +79,6 @@ class _FramingModalState extends State<FramingModal> {
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 16),
-
-          // 边界尺寸卡片
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -97,8 +95,6 @@ class _FramingModalState extends State<FramingModal> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // 跑框设置选项
           SwitchListTile(
             title: const Text('开启弱光/红光定位辅助'),
             subtitle: const Text('光斑可清晰指示板材实际切削边界', style: TextStyle(fontSize: 11)),
@@ -121,8 +117,6 @@ class _FramingModalState extends State<FramingModal> {
             ],
           ),
           const SizedBox(height: 12),
-
-          // 进度条或控制按钮
           if (framing.isFraming) ...[
             LinearProgressIndicator(value: framing.progress, minHeight: 8),
             const SizedBox(height: 16),
