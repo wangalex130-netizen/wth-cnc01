@@ -4,7 +4,7 @@ import '../models/material_preset.dart';
 class MaterialSelectorCard extends StatefulWidget {
   final ValueChanged<MaterialPreset>? onPresetSelected;
 
-  const MaterialSelectorCard({Super.key, this.onPresetSelected});
+  const MaterialSelectorCard({super.key, this.onPresetSelected}); // 修正为小写 super.key
 
   @override
   State<MaterialSelectorCard> createState() => _MaterialSelectorCardState();
@@ -32,8 +32,6 @@ class _MaterialSelectorCardState extends State<MaterialSelectorCard> {
               ],
             ),
             const SizedBox(height: 12),
-
-            // 材料水平选择列表
             SizedBox(
               height: 48,
               child: ListView.separated(
@@ -59,8 +57,6 @@ class _MaterialSelectorCardState extends State<MaterialSelectorCard> {
               ),
             ),
             const SizedBox(height: 12),
-
-            // 参数细节面板
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
