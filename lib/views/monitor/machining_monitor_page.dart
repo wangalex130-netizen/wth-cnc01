@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
+import '../../services/cnc_service.dart';
+import '../../services/cnc_provider.dart';
 
-class MachiningMonitorPage extends StatefulWidget {
+class MachiningMonitorPage extends StatelessWidget {
   const MachiningMonitorPage({Super.key});
 
   @override
-  State<MachiningMonitorPage> createState() => _MachiningMonitorPageState();
-}
-
-class _MachiningMonitorPageState extends State<MachiningMonitorPage> {
-  double _feedRateOverride = 100.0; // 进给倍率 50% - 150%
-  double _spindleSpeedOverride = 100.0; // 主轴倍率 50% - 120%
-  final double _progress = 0.45; // 模拟当前加工进度 45%
-
-  @override
   Widget build(BuildContext context) {
+    final cnc = CncProvider.of(context);
+
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        // 进度与状态看板
+        // 状态与任务卡片
         Card(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
@@ -26,25 +21,22 @@ class _MachiningMonitorPageState extends State<MachiningMonitorPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('当前任务: Phone_Case_v2.nc'),
-                    Chip(
-                      label: const Text('雕刻中', style: TextStyle(color: Colors.white)),
-                      backgroundColor: Colors.green[700],
-                    ),
+                    const Text('任务: Aluminium_Cover.gcode'),
+                    _buildStatusBadge(cnc.state),
                   ],
                 ),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
-                  value: _progress,
+                  value: cnc.state == CncMachineState.run ? 0.68 : 0.0,
                   minHeight: 12,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 const SizedBox(height: 12),
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('进度: ${(_progress * 100).toInt()}%'),
-                    const Text('预计剩余时间: 12 分 30 秒'),
+                    Text('加工进度: 68%'),
+                    Text('预计剩余: 08 分 15 秒'),
                   ],
                 ),
               ],
@@ -53,53 +45,45 @@ class _MachiningMonitorPageState extends State<MachiningMonitorPage> {
         ),
         const SizedBox(height: 16),
 
-        // 倍率微调控制区域 (拓竹风格卡片)
+        // 倍率微调控制器
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('实时切削控制', style: Theme.of(context).textTheme.titleMedium),
+                Text('实时倍率干预 (Overrides)', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 16),
-                
-                // 进给倍率
                 Row(
                   children: [
                     const Icon(Icons.speed),
                     const SizedBox(width: 8),
-                    Text('进给速度: ${_feedRateOverride.toInt()}%'),
+                    Text('进给: ${cnc.feedOverride}%'),
                     Expanded(
                       child: Slider(
-                        value: _feedRateOverride,
+                        value: cnc.feedOverride.toDouble(),
                         min: 50,
                         max: 150,
                         divisions: 10,
-                        label: '${_feedRateOverride.toInt()}%',
-                        onChanged: (val) {
-                          setState(() => _feedRateOverride = val);
-                        },
+                        label: '${cnc.feedOverride}%',
+                        onChanged: (val) => cnc.setFeedOverride(val.toInt()),
                       ),
                     ),
                   ],
                 ),
-
-                // 主轴转速倍率
                 Row(
                   children: [
                     const Icon(Icons.rotate_right),
                     const SizedBox(width: 8),
-                    Text('主轴转速: ${_spindleSpeedOverride.toInt()}%'),
+                    Text('主轴: ${cnc.spindleOverride}%'),
                     Expanded(
                       child: Slider(
-                        value: _spindleSpeedOverride,
+                        value: cnc.spindleOverride.toDouble(),
                         min: 50,
                         max: 120,
                         divisions: 7,
-                        label: '${_spindleSpeedOverride.toInt()}%',
-                        onChanged: (val) {
-                          setState(() => _spindleSpeedOverride = val);
-                        },
+                        label: '${cnc.spindleOverride}%',
+                        onChanged: (val) => cnc.setSpindleOverride(val.toInt()),
                       ),
                     ),
                   ],
@@ -110,7 +94,7 @@ class _MachiningMonitorPageState extends State<MachiningMonitorPage> {
         ),
         const SizedBox(height: 24),
 
-        // 底部安全控制按钮组
+        // 安全急停控制按键
         Row(
           children: [
             Expanded(
@@ -119,9 +103,15 @@ class _MachiningMonitorPageState extends State<MachiningMonitorPage> {
                   backgroundColor: Colors.amber[800],
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                icon: const Icon(Icons.pause),
-                label: const Text('暂停加工'),
-                onPressed: () {},
+                icon: Icon(cnc.state == CncMachineState.hold ? Icons.play_arrow : Icons.pause),
+                label: Text(cnc.state == CncMachineState.hold ? '继续加工' : '暂停加工'),
+                onPressed: () {
+                  if (cnc.state == CncMachineState.hold) {
+                    cnc.resumeProcessing();
+                  } else {
+                    cnc.pauseProcessing();
+                  }
+                },
               ),
             ),
             const SizedBox(width: 16),
@@ -132,13 +122,46 @@ class _MachiningMonitorPageState extends State<MachiningMonitorPage> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 icon: const Icon(Icons.stop),
-                label: const Text('紧急停止 (E-Stop)'),
-                onPressed: () {},
+                label: const Text('急停 (E-STOP)'),
+                onPressed: () => cnc.emergencyStop(),
               ),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildStatusBadge(CncMachineState state) {
+    Color color;
+    String text;
+
+    switch (state) {
+      case CncMachineState.run:
+        color = Colors.green[700]!;
+        text = '加工中';
+        break;
+      case CncMachineState.hold:
+        color = Colors.amber[800]!;
+        text = '已暂停';
+        break;
+      case CncMachineState.alarm:
+        color = Colors.red[800]!;
+        text = 'ALARM 报警';
+        break;
+      case CncMachineState.idle:
+        color = Colors.blue[700]!;
+        text = '空闲就绪';
+        break;
+      case CncMachineState.disconnected:
+        color = Colors.grey[700]!;
+        text = '未连接';
+        break;
+    }
+
+    return Chip(
+      label: Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
+      backgroundColor: color,
     );
   }
 }
