@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/cnc_provider.dart';
+import '../../widgets/macro_shortcuts_card.dart';
 
 class JogControlPage extends StatefulWidget {
   const JogControlPage({Super.key});
@@ -18,7 +19,7 @@ class _JogControlPageState extends State<JogControlPage> {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        // 实时坐标显示卡片
+        // 1. 实时坐标卡片
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -34,7 +35,11 @@ class _JogControlPageState extends State<JogControlPage> {
         ),
         const SizedBox(height: 16),
 
-        // 步长选择器
+        // 2. 快捷宏动作卡片 (NEW)
+        const MacroShortcutsCard(),
+        const SizedBox(height: 16),
+
+        // 3. 步长选择器
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -61,7 +66,7 @@ class _JogControlPageState extends State<JogControlPage> {
         ),
         const SizedBox(height: 16),
 
-        // 三轴控制软盘
+        // 4. 三轴点动控制器
         Card(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
