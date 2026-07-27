@@ -10,7 +10,7 @@ import 'monitor/machining_monitor_page.dart';
 import 'settings/machine_settings_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Super.key});
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
