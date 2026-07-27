@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/cnc_provider.dart';
 
 class JogControlPage extends StatefulWidget {
   const JogControlPage({Super.key});
@@ -8,30 +9,32 @@ class JogControlPage extends StatefulWidget {
 }
 
 class _JogControlPageState extends State<JogControlPage> {
-  double _stepDistance = 1.0; // 默认步长 1mm
+  double _stepDistance = 1.0;
 
   @override
   Widget build(BuildContext context) {
+    final cnc = CncProvider.of(context);
+
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        // 实时坐标显示区域
+        // 实时坐标显示卡片
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildAxisDisplay('X 轴', '0.000', Colors.redAccent),
-                _buildAxisDisplay('Y 轴', '0.000', Colors.greenAccent),
-                _buildAxisDisplay('Z 轴', '0.000', Colors.blueAccent),
+                _buildAxisDisplay('X 轴', cnc.x.toStringAsFixed(3), Colors.redAccent),
+                _buildAxisDisplay('Y 轴', cnc.y.toStringAsFixed(3), Colors.greenAccent),
+                _buildAxisDisplay('Z 轴', cnc.z.toStringAsFixed(3), Colors.blueAccent),
               ],
             ),
           ),
         ),
         const SizedBox(height: 16),
 
-        // 步长选择卡片
+        // 步长选择器
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -48,10 +51,8 @@ class _JogControlPageState extends State<JogControlPage> {
                     ButtonSegment(value: 50.0, label: Text('50.0')),
                   ],
                   selected: {_stepDistance},
-                  onSelectionChanged: (Set<double> selection) {
-                    setState(() {
-                      _stepDistance = selection.first;
-                    });
+                  onSelectionChanged: (selection) {
+                    setState(() => _stepDistance = selection.first);
                   },
                 ),
               ],
@@ -60,7 +61,7 @@ class _JogControlPageState extends State<JogControlPage> {
         ),
         const SizedBox(height: 16),
 
-        // 三轴点动操作区
+        // 三轴控制软盘
         Card(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
@@ -72,7 +73,7 @@ class _JogControlPageState extends State<JogControlPage> {
                     IconButton.filledTonal(
                       iconSize: 32,
                       icon: const Icon(Icons.keyboard_arrow_up),
-                      onPressed: () {}, // Y+
+                      onPressed: () => cnc.jog(axis: 'Y', distance: _stepDistance),
                     ),
                   ],
                 ),
@@ -82,18 +83,18 @@ class _JogControlPageState extends State<JogControlPage> {
                     IconButton.filledTonal(
                       iconSize: 32,
                       icon: const Icon(Icons.keyboard_arrow_left),
-                      onPressed: () {}, // X-
+                      onPressed: () => cnc.jog(axis: 'X', distance: -_stepDistance),
                     ),
-                    const SizedBox(width: 32),
+                    const SizedBox(width: 24),
                     ElevatedButton(
-                      onPressed: () {},
-                      child: const Text('工件原点归零'),
+                      onPressed: () => cnc.setZero(x: true, y: true, z: false),
+                      child: const Text('XY 工件归零'),
                     ),
-                    const SizedBox(width: 32),
+                    const SizedBox(width: 24),
                     IconButton.filledTonal(
                       iconSize: 32,
                       icon: const Icon(Icons.keyboard_arrow_right),
-                      onPressed: () {}, // X+
+                      onPressed: () => cnc.jog(axis: 'X', distance: _stepDistance),
                     ),
                   ],
                 ),
@@ -103,7 +104,7 @@ class _JogControlPageState extends State<JogControlPage> {
                     IconButton.filledTonal(
                       iconSize: 32,
                       icon: const Icon(Icons.keyboard_arrow_down),
-                      onPressed: () {}, // Y-
+                      onPressed: () => cnc.jog(axis: 'Y', distance: -_stepDistance),
                     ),
                   ],
                 ),
@@ -113,13 +114,13 @@ class _JogControlPageState extends State<JogControlPage> {
                   children: [
                     FilledButton.tonalIcon(
                       icon: const Icon(Icons.arrow_upward),
-                      label: const Text('Z 轴上升'),
-                      onPressed: () {},
+                      label: const Text('Z 抬刀'),
+                      onPressed: () => cnc.jog(axis: 'Z', distance: _stepDistance),
                     ),
                     FilledButton.tonalIcon(
                       icon: const Icon(Icons.arrow_downward),
-                      label: const Text('Z 轴下降'),
-                      onPressed: () {},
+                      label: const Text('Z 落刀'),
+                      onPressed: () => cnc.jog(axis: 'Z', distance: -_stepDistance),
                     ),
                   ],
                 )
@@ -136,10 +137,7 @@ class _JogControlPageState extends State<JogControlPage> {
       children: [
         Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
-        ),
+        Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
       ],
     );
   }
