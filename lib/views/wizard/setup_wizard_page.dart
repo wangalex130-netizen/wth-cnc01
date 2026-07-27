@@ -5,7 +5,7 @@ import '../../widgets/material_selector_card.dart';
 import '../../widgets/framing_modal.dart';
 
 class SetupWizardPage extends StatelessWidget {
-  const SetupWizardPage({Super.key});
+  const SetupWizardPage({super.key});
 
   // 示范用边界 G-code
   final String _boundaryDemoGcode = '''
