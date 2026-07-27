@@ -7,7 +7,7 @@ class ProjectManagerModal extends StatefulWidget {
   final ValueChanged<ProjectFile> onProjectSelected;
 
   const ProjectManagerModal({
-    Super.key,
+    super.key,
     required this.selectedProject,
     required this.onProjectSelected,
   });
