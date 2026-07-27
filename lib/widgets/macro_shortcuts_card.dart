@@ -3,7 +3,7 @@ import '../models/macro_command.dart';
 import '../services/cnc_provider.dart';
 
 class MacroShortcutsCard extends StatefulWidget {
-  const MacroShortcutsCard({Super.key});
+  const MacroShortcutsCard({super.key});
 
   @override
   State<MacroShortcutsCard> createState() => _MacroShortcutsCardState();
