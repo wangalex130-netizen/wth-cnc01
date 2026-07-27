@@ -3,7 +3,7 @@ import '../models/job_history.dart';
 import '../services/job_history_service.dart';
 
 class JobAnalyticsModal extends StatefulWidget {
-  const JobAnalyticsModal({Super.key});
+  const JobAnalyticsModal({super.key});
 
   static void show(BuildContext context) {
     showModalBottomSheet(
