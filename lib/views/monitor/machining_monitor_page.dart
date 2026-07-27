@@ -1,121 +1,104 @@
 import 'package:flutter/material.dart';
-import '../models/gcode_model.dart';
+import '../models/project_file.dart';
 
-class GcodePreviewCanvas extends StatelessWidget {
-  final GcodePath? pathData;
-  final Offset? currentToolPosition; // 当前实时刀具坐标 (X, Y)
+class ProjectManagerModal extends StatelessWidget {
+  final ProjectFile selectedProject;
+  final ValueChanged<ProjectFile> onProjectSelected;
 
-  const GcodePreviewCanvas({
+  const ProjectManagerModal({
     Super.key,
-    this.pathData,
-    this.currentToolPosition,
+    required this.selectedProject,
+    required this.onProjectSelected,
   });
+
+  static void show({
+    required BuildContext context,
+    required ProjectFile current,
+    required ValueChanged<ProjectFile> onSelected,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => ProjectManagerModal(
+        selectedProject: current,
+        onProjectSelected: onSelected,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 200,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF181818),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: pathData == null || pathData!.points.isEmpty
-          ? const Center(
-              child: Text(
-                '暂未加载 G-code 路径',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('工程文件选择', style: Theme.of(context).textTheme.titleLarge),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
               ),
-            )
-          : ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CustomPaint(
-                painter: _PathPainter(
-                  path: pathData!,
-                  toolPos: currentToolPosition,
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // 列表展现
+          ...ProjectFile.sampleProjects.map((project) {
+            final isSelected = project.id == selectedProject.id;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Card(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+                    : const Color(0xFF1E1E1E),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isSelected ? Colors.blueAccent : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: CircleAvatar(
+                    backgroundColor: isSelected ? Colors.blueAccent : Colors.white10,
+                    child: Icon(project.icon, color: Colors.white),
+                  ),
+                  title: Text(
+                    project.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      '文件: ${project.fileName}\n预估时间: ${project.estimatedTime} | 建议材料: ${project.recommendedMaterial}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check_circle, color: Colors.blueAccent)
+                      : OutlinedButton(
+                          onPressed: () {
+                            onProjectSelected(project);
+                            Navigator.pop(context);
+                          },
+                          child: const Text('载入'),
+                        ),
                 ),
               ),
-            ),
+            );
+          }),
+          const SizedBox(height: 12),
+        ],
+      ),
     );
-  }
-}
-
-class _PathPainter extends CustomPainter {
-  final GcodePath path;
-  final Offset? toolPos;
-
-  _PathPainter({required this.path, this.toolPos});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (path.width <= 0 || path.height <= 0) return;
-
-    // 1. 绘制网格背景
-    final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
-      ..strokeWidth = 1.0;
-    for (double i = 0; i < size.width; i += 20) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), gridPaint);
-    }
-    for (double i = 0; i < size.height; i += 20) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), gridPaint);
-    }
-
-    // 2. 计算缩放与居中参数
-    const padding = 24.0;
-    final scaleX = (size.width - padding * 2) / path.width;
-    final scaleY = (size.height - padding * 2) / path.height;
-    final scale = scaleX < scaleY ? scaleX : scaleY;
-
-    // 3. 绘制 G-code 刀轨线
-    final pathPaint = Paint()
-      ..color = Colors.blueAccent.withOpacity(0.8)
-      ..strokeWidth = 1.8
-      ..style = PaintingStyle.stroke;
-
-    final pathObj = Path();
-    for (int i = 0; i < path.points.length; i++) {
-      final pt = path.points[i];
-      final dx = padding + (pt.dx - path.minX) * scale;
-      final dy = size.height - (padding + (pt.dy - path.minY) * scale);
-
-      if (i == 0) {
-        pathObj.moveTo(dx, dy);
-      } else {
-        pathObj.lineTo(dx, dy);
-      }
-    }
-    canvas.drawPath(pathObj, pathPaint);
-
-    // 4. 实时绘制刀具位置 (红色动效高亮圈)
-    if (toolPos != null) {
-      final toolDx = padding + (toolPos!.dx - path.minX) * scale;
-      final toolDy = size.height - (padding + (toolPos!.dy - path.minY) * scale);
-
-      // 外扩散光圈
-      final haloPaint = Paint()
-        ..color = Colors.redAccent.withOpacity(0.3)
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(Offset(toolDx, toolDy), 8.0, haloPaint);
-
-      // 实体刀尖点
-      final dotPaint = Paint()
-        ..color = Colors.redAccent
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(Offset(toolDx, toolDy), 4.0, dotPaint);
-
-      // 十字准星
-      final crossPaint = Paint()
-        ..color = Colors.white
-        ..strokeWidth = 1.0;
-      canvas.drawLine(Offset(toolDx - 6, toolDy), Offset(toolDx + 6, toolDy), crossPaint);
-      canvas.drawLine(Offset(toolDx, toolDy - 6), Offset(toolDx, toolDy + 6), crossPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _PathPainter oldDelegate) {
-    return oldDelegate.toolPos != toolPos || oldDelegate.path != path;
   }
 }
