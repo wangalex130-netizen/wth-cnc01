@@ -3,7 +3,7 @@ import '../../services/cnc_provider.dart';
 import '../../widgets/macro_shortcuts_card.dart';
 
 class JogControlPage extends StatefulWidget {
-  const JogControlPage({Super.key});
+  const JogControlPage({super.key});
 
   @override
   State<JogControlPage> createState() => _JogControlPageState();
