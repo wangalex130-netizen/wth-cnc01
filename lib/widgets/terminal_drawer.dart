@@ -3,7 +3,7 @@ import '../services/cnc_service.dart';
 import '../services/cnc_provider.dart';
 
 class TerminalDrawer extends StatefulWidget {
-  const TerminalDrawer({Super.key});
+  const TerminalDrawer({super.key});
 
   @override
   State<TerminalDrawer> createState() => _TerminalDrawerState();
