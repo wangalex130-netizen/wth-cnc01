@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/cnc_service.dart';
+import '../services/cnc_provider.dart';
+import '../widgets/device_connection_modal.dart';
 import 'control/jog_control_page.dart';
 import 'wizard/setup_wizard_page.dart';
 import 'monitor/machining_monitor_page.dart';
@@ -21,6 +24,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final cnc = CncProvider.of(context);
+    final isConnected = cnc.state != CncMachineState.disconnected;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Smart CNC Pro'),
@@ -28,11 +34,19 @@ class _HomePageState extends State<HomePage> {
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: ActionChip(
-              avatar: const Icon(Icons.bluetooth_connected, size: 16, color: Colors.greenAccent),
-              label: const Text('已连接 设备', style: TextStyle(fontSize: 12)),
-              onPressed: () {
-                // TODO: 触发设备连接切换弹窗
-              },
+              avatar: Icon(
+                isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+                size: 16,
+                color: isConnected ? Colors.greenAccent : Colors.redAccent,
+              ),
+              label: Text(
+                isConnected ? '已连接' : '未连接',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isConnected ? Colors.greenAccent : Colors.redAccent,
+                ),
+              ),
+              onPressed: () => DeviceConnectionModal.show(context),
             ),
           ),
         ],
