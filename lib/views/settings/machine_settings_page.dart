@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/cnc_provider.dart';
 import '../../models/grbl_setting_item.dart';
+import '../../widgets/device_health_modal.dart';
 
 class MachineSettingsPage extends StatefulWidget {
   const MachineSettingsPage({Super.key});
@@ -13,7 +14,6 @@ class _MachineSettingsPageState extends State<MachineSettingsPage> {
   int _tabIndex = 0; // 0: 常规调校, 1: 全量参数($$)
   final List<GrblSettingItem> _settings = GrblSettingItem.defaultSettings;
 
-  // 快捷方向开关状态
   bool _invertX = false;
   bool _invertY = false;
   bool _invertZ = false;
@@ -25,6 +25,29 @@ class _MachineSettingsPageState extends State<MachineSettingsPage> {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
+        // 0. 设备健康度入口卡片 (参照极简硬件体验)
+        Card(
+          color: Colors.blueAccent.withOpacity(0.12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.blueAccent.withOpacity(0.3)),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(12),
+            leading: const CircleAvatar(
+              backgroundColor: Colors.blueAccent,
+              child: Icon(Icons.health_and_safety, color: Colors.white),
+            ),
+            title: const Text('设备健康度与保养诊断', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('主轴碳刷预警：剩余 10% | 建议近期保养', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            trailing: OutlinedButton(
+              onPressed: () => DeviceHealthModal.show(context),
+              child: const Text('查看诊断'),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
         // 1. 顶部分段选择器
         SegmentedButton<int>(
           segments: const [
@@ -46,7 +69,6 @@ class _MachineSettingsPageState extends State<MachineSettingsPage> {
   Widget _buildEasySettings(cnc) {
     return Column(
       children: [
-        // 电机轴向反转设置
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -79,7 +101,6 @@ class _MachineSettingsPageState extends State<MachineSettingsPage> {
         ),
         const SizedBox(height: 12),
 
-        // 工作台最大行程设置
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -99,7 +120,6 @@ class _MachineSettingsPageState extends State<MachineSettingsPage> {
         ),
         const SizedBox(height: 16),
 
-        // 提交修改按钮
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
