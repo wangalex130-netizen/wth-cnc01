@@ -1,9 +1,29 @@
 import 'package:flutter/material.dart';
 import '../../services/cnc_service.dart';
 import '../../services/cnc_provider.dart';
+import '../../models/gcode_model.dart';
+import '../../widgets/gcode_preview_canvas.dart';
 
-class MachiningMonitorPage extends StatelessWidget {
+class MachiningMonitorPage extends StatefulWidget {
   const MachiningMonitorPage({Super.key});
+
+  @override
+  State<MachiningMonitorPage> createState() => _MachiningMonitorPageState();
+}
+
+class _MachiningMonitorPageState extends State<MachiningMonitorPage> {
+  GcodePath? _loadedPath;
+
+  // 模拟示范 G-code 数据 (圆形/正方形切削轨迹)
+  final String _demoGcode = '''
+G0 X0 Y0 Z5
+G1 Z-1 F300
+G1 X50 Y0 F800
+G1 X50 Y50
+G1 X0 Y50
+G1 X0 Y0
+G0 Z5
+''';
 
   @override
   Widget build(BuildContext context) {
@@ -12,24 +32,68 @@ class MachiningMonitorPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        // 状态与任务卡片
+        // 1. 2D 轨迹预览卡片
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('刀具加工轨迹预览', style: Theme.of(context).textTheme.titleMedium),
+                    TextButton.icon(
+                      icon: const Icon(Icons.file_open, size: 18),
+                      label: const Text('载入示例文件'),
+                      onPressed: () {
+                        setState(() {
+                          _loadedPath = GcodePath.parse(_demoGcode);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                GcodePreviewCanvas(pathData: _loadedPath),
+                if (_loadedPath != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Text('尺寸 X: ${_loadedPath!.width.toStringAsFixed(1)} mm',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text('尺寸 Y: ${_loadedPath!.height.toStringAsFixed(1)} mm',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text('节点数: ${_loadedPath!.points.length}',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // 2. 状态与进度卡片
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('任务: Aluminium_Cover.gcode'),
+                    const Text('当前任务: Demo_Square.gcode'),
                     _buildStatusBadge(cnc.state),
                   ],
                 ),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
                   value: cnc.state == CncMachineState.run ? 0.68 : 0.0,
-                  minHeight: 12,
-                  borderRadius: BorderRadius.circular(6),
+                  minHeight: 10,
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 const SizedBox(height: 12),
                 const Row(
@@ -45,7 +109,7 @@ class MachiningMonitorPage extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // 倍率微调控制器
+        // 3. 实时倍率控制
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -53,7 +117,7 @@ class MachiningMonitorPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('实时倍率干预 (Overrides)', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     const Icon(Icons.speed),
@@ -92,9 +156,9 @@ class MachiningMonitorPage extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // 安全急停控制按键
+        // 4. 急停与控制按键
         Row(
           children: [
             Expanded(
