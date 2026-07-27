@@ -3,9 +3,9 @@ import 'cnc_service.dart';
 
 class CncProvider extends InheritedNotifier<CncService> {
   const CncProvider({
-    Super.key,
+    super.key, // 修正为小写 super.key
     required CncService cncService,
-    required Super.child,
+    required super.child,
   }) : super(notifier: cncService);
 
   static CncService of(BuildContext context) {
