@@ -5,7 +5,7 @@ import '../../widgets/device_health_modal.dart';
 import '../../widgets/job_analytics_modal.dart';
 
 class MachineSettingsPage extends StatefulWidget {
-  const MachineSettingsPage({Super.key});
+  const MachineSettingsPage({super.key})
 
   @override
   State<MachineSettingsPage> createState() => _MachineSettingsPageState();
