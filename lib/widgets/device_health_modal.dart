@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/device_health.dart';
 
 class DeviceHealthModal extends StatefulWidget {
-  const DeviceHealthModal({Super.key});
+  const DeviceConnectionModal({super.key});
 
   static void show(BuildContext context) {
     showModalBottomSheet(
