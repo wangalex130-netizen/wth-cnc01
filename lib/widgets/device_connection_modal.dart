@@ -3,7 +3,7 @@ import '../services/cnc_service.dart';
 import '../services/cnc_provider.dart';
 
 class DeviceConnectionModal extends StatefulWidget {
-  const DeviceConnectionModal({Super.key});
+  const DeviceConnectionModal({super.key});
 
   static void show(BuildContext context) {
     showModalBottomSheet(
