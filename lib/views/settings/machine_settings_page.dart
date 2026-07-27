@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/cnc_provider.dart';
 import '../../models/grbl_setting_item.dart';
 import '../../widgets/device_health_modal.dart';
+import '../../widgets/job_analytics_modal.dart';
 
 class MachineSettingsPage extends StatefulWidget {
   const MachineSettingsPage({Super.key});
@@ -25,26 +26,49 @@ class _MachineSettingsPageState extends State<MachineSettingsPage> {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        // 0. 设备健康度入口卡片 (参照极简硬件体验)
-        Card(
-          color: Colors.blueAccent.withOpacity(0.12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.blueAccent.withOpacity(0.3)),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: const CircleAvatar(
-              backgroundColor: Colors.blueAccent,
-              child: Icon(Icons.health_and_safety, color: Colors.white),
+        // 0. 设备健康度与切削履历卡片组
+        Row(
+          children: [
+            Expanded(
+              child: Card(
+                color: Colors.blueAccent.withOpacity(0.12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.blueAccent.withOpacity(0.3)),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.blueAccent,
+                    child: Icon(Icons.health_and_safety, color: Colors.white),
+                  ),
+                  title: const Text('设备健康度', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: const Text('主轴碳刷预警', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  onTap: () => DeviceHealthModal.show(context),
+                ),
+              ),
             ),
-            title: const Text('设备健康度与保养诊断', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('主轴碳刷预警：剩余 10% | 建议近期保养', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            trailing: OutlinedButton(
-              onPressed: () => DeviceHealthModal.show(context),
-              child: const Text('查看诊断'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Card(
+                color: Colors.purpleAccent.withOpacity(0.12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.purpleAccent.withOpacity(0.3)),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.purpleAccent,
+                    child: Icon(Icons.analytics_outlined, color: Colors.white),
+                  ),
+                  title: const Text('切削履历', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: const Text('查看数据与 CSV', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  onTap: () => JobAnalyticsModal.show(context),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
         const SizedBox(height: 16),
 
