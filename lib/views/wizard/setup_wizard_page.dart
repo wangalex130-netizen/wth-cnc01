@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/cnc_provider.dart';
+import '../../widgets/material_selector_card.dart';
 
 class SetupWizardPage extends StatelessWidget {
   const SetupWizardPage({Super.key});
@@ -16,7 +17,17 @@ class SetupWizardPage extends StatelessWidget {
         Text('按照引导完成零点定位与校准，保障切削安全', style: TextStyle(color: Colors.grey[400])),
         const SizedBox(height: 16),
 
-        // 自动对刀
+        // 1. 材料预设卡片
+        MaterialSelectorCard(
+          onPresetSelected: (preset) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('已套用【${preset.name}】加工参数')),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // 2. 自动对刀
         Card(
           child: ListTile(
             leading: const CircleAvatar(
@@ -33,7 +44,7 @@ class SetupWizardPage extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // 激光循边
+        // 3. 激光循边
         Card(
           child: ListTile(
             leading: const CircleAvatar(
@@ -54,7 +65,7 @@ class SetupWizardPage extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // 设为原点
+        // 4. 设为原点
         Card(
           child: ListTile(
             leading: const CircleAvatar(
@@ -115,7 +126,6 @@ class SetupWizardPage extends StatelessWidget {
                 child: FilledButton(
                   onPressed: () {
                     final cnc = CncProvider.of(context);
-                    // 执行探测命令 G38.2 Z-20 F100
                     cnc.jog(axis: 'Z', distance: -10, feedRate: 100);
                     cnc.setZero(x: false, y: false, z: true);
                     Navigator.pop(modalContext);
