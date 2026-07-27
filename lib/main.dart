@@ -9,7 +9,7 @@ void main() {
 }
 
 class SmartCncApp extends StatefulWidget {
-  const SmartCncApp({Super.key});
+  const SmartCncApp({super.key});
 
   @override
   State<SmartCncApp> createState() => _SmartCncAppState();
