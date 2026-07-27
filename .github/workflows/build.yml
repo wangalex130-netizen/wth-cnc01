@@ -26,11 +26,11 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Generate Android Native Boilerplate
+        run: flutter create . --platforms=android --org com.smartcnc.app
+
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Analyze code syntax
-        run: flutter analyze
 
       - name: Build Release APK
         run: flutter build apk --release --no-tree-shake-icons
@@ -56,6 +56,9 @@ jobs:
 
       - name: Enable Windows Desktop Support
         run: flutter config --enable-windows-desktop
+
+      - name: Generate Windows Native Boilerplate
+        run: flutter create . --platforms=windows --org com.smartcnc.app
 
       - name: Install dependencies
         run: flutter pub get
