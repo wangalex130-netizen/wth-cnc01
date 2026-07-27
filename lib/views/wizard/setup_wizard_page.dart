@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../services/cnc_provider.dart';
+import '../../models/gcode_model.dart';
 import '../../widgets/material_selector_card.dart';
+import '../../widgets/framing_modal.dart';
 
 class SetupWizardPage extends StatelessWidget {
   const SetupWizardPage({Super.key});
+
+  // 示范用边界 G-code
+  final String _boundaryDemoGcode = '''
+G0 X0 Y0 Z5
+G1 X50 Y0
+G1 X50 Y40
+G1 X0 Y40
+G1 X0 Y0
+''';
 
   @override
   Widget build(BuildContext context) {
@@ -44,22 +55,21 @@ class SetupWizardPage extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // 3. 激光循边
+        // 3. 激光循边/走框校验 (已接入 FramingModal)
         Card(
           child: ListTile(
             leading: const CircleAvatar(
               backgroundColor: Colors.purpleAccent,
               child: Icon(Icons.center_focus_strong, color: Colors.white),
             ),
-            title: const Text('激光寻边 / 轮廓定位'),
-            subtitle: const Text('打开定位红光并沿工件外框巡航'),
+            title: const Text('跑框走框 / 轮廓边界预览'),
+            subtitle: const Text('沿 G-code 外框巡航，肉眼校验板材预留量'),
             trailing: OutlinedButton(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('红光定位预览模式已开启')),
-                );
+                final path = GcodePath.parse(_boundaryDemoGcode);
+                FramingModal.show(context: context, path: path);
               },
-              child: const Text('开启预览'),
+              child: const Text('跑框预览'),
             ),
           ),
         ),
