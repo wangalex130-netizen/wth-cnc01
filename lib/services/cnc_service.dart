@@ -1,15 +1,17 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'grbl_status_parser.dart';
+import 'serial_port_adapter.dart';
 
-/// 设备状态枚举
 enum CncMachineState { disconnected, idle, run, hold, alarm }
 
 class CncService extends ChangeNotifier {
-  // 基础连接与机器状态
+  final SerialPortAdapter _adapter = SerialPortAdapter();
+  Timer? _statusPollTimer;
+
   CncMachineState _state = CncMachineState.disconnected;
   CncMachineState get state => _state;
 
-  // 三轴实时工件坐标 (WCO)
   double _x = 0.0;
   double _y = 0.0;
   double _z = 0.0;
@@ -18,49 +20,64 @@ class CncService extends ChangeNotifier {
   double get y => _y;
   double get z => _z;
 
-  // 当前倍率设置
   int _feedOverride = 100;
   int _spindleOverride = 100;
 
   int get feedOverride => _feedOverride;
   int get spindleOverride => _spindleOverride;
 
-  // 模拟蓝牙/串口连接
+  CncService() {
+    // 绑定下位机数据接收通道
+    _adapter.onDataReceived = _onHardwareResponse;
+  }
+
+  /// 连接设备并开启 200ms 实时状态轮询定时器
   Future<bool> connect(String portOrAddress) async {
-    // TODO: 后续在此处接入 flutter_libserialport 或 flutter_blue_plus
-    _state = CncMachineState.idle;
-    notifyListeners();
-    return true;
+    final success = await _adapter.openPort(portOrAddress);
+    if (success) {
+      _state = CncMachineState.idle;
+
+      // 启动 200ms GRBL 状态查询循环 (?)
+      _statusPollTimer?.cancel();
+      _statusPollTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+        if (_adapter.isConnected) {
+          _adapter.sendCommand('?');
+        }
+      });
+
+      notifyListeners();
+    }
+    return success;
   }
 
   void disconnect() {
+    _statusPollTimer?.cancel();
+    _adapter.closePort();
     _state = CncMachineState.disconnected;
     notifyListeners();
   }
 
-  // --- 1. 三轴点动控制 (Jogging) ---
-  /// 下发点动指令，例如: $J=G91 G21 X10 F1000
+  /// 1. 三轴点动控制
   void jog({required String axis, required double distance, double feedRate = 1000}) {
     if (_state == CncMachineState.disconnected) return;
 
-    final String command = '\$J=G91 G21 $axis$distance F${feedRate.toInt()}\n';
-    _sendRawCommand(command);
+    final String cmd = '\$J=G91 G21 $axis${distance.toStringAsFixed(3)} F${feedRate.toInt()}';
+    _adapter.sendCommand(cmd);
 
-    // 模拟更新本地坐标（硬件接入后由实时状态回报更新）
+    // 本地快速推算更新，消除网络延迟卡顿感
     if (axis == 'X') _x += distance;
     if (axis == 'Y') _y += distance;
     if (axis == 'Z') _z += distance;
     notifyListeners();
   }
 
-  // --- 2. 原点设定 (Zero WCS) ---
-  /// 设当前位置为 G54 工件零点
+  /// 2. 原点设定 (G54)
   void setZero({bool x = true, bool y = true, bool z = true}) {
     String axes = '';
     if (x) axes += 'X0 ';
     if (y) axes += 'Y0 ';
     if (z) axes += 'Z0 ';
-    _sendRawCommand('G10 L20 P1 $axes\n');
+    _adapter.sendCommand('G10 L20 P1 $axes');
 
     if (x) _x = 0.0;
     if (y) _y = 0.0;
@@ -68,46 +85,57 @@ class CncService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- 3. 实时倍率微调 (Overrides) ---
-  /// 调节进给倍率 (GRBL realtime commands: 0x90=100%, 0x91=+10%, 0x92=-10%)
+  /// 3. 实时倍率微调
   void setFeedOverride(int percent) {
     _feedOverride = percent.clamp(50, 150);
-    // TODO: 发送对应的 GRBL 实时字节码
+    _adapter.sendCommand('\x90'); // GRBL 实时 100% 进给重置字节
     notifyListeners();
   }
 
-  /// 调节主轴转速倍率 (0x99=100%, 0x9A=+10%, 0x9B=-10%)
   void setSpindleOverride(int percent) {
     _spindleOverride = percent.clamp(50, 120);
-    // TODO: 发送对应的 GRBL 实时字节码
+    _adapter.sendCommand('\x99'); // GRBL 实时 100% 主轴转速重置字节
     notifyListeners();
   }
 
-  // --- 4. 安全控制 (Realtime Safety) ---
-  /// 暂停加工 (Feed Hold: '!')
+  /// 4. 实时安全控制
   void pauseProcessing() {
-    _sendRawCommand('!');
+    _adapter.sendCommand('!'); // Feed Hold 实时字节
     _state = CncMachineState.hold;
     notifyListeners();
   }
 
-  /// 恢复加工 (Cycle Start: '~')
   void resumeProcessing() {
-    _sendRawCommand('~');
+    _adapter.sendCommand('~'); // Cycle Start 实时字节
     _state = CncMachineState.run;
     notifyListeners();
   }
 
-  /// 紧急停止 / 软复位 (Reset: 0x18 / Ctrl+X)
   void emergencyStop() {
-    _sendRawCommand('\x18');
+    _adapter.sendCommand('\x18'); // Ctrl+X 软复位
     _state = CncMachineState.alarm;
     notifyListeners();
   }
 
-  /// 发送原始 G-code 命令的内部入口
-  void _sendRawCommand(String cmd) {
-    // 在此处打印下发日志，方便调试
-    debugPrint('[CNC Out]: $cmd');
+  /// 处理从物理下位机返回的串口行
+  void _onHardwareResponse(String response) {
+    // 尝试用 GRBL Status Parser 解析问号报文
+    final statusData = GrblStatusParser.parse(response);
+    if (statusData != null) {
+      _x = statusData.x;
+      _y = statusData.y;
+      _z = statusData.z;
+      if (_state != CncMachineState.alarm) {
+        _state = statusData.state;
+      }
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _statusPollTimer?.cancel();
+    _adapter.closePort();
+    super.dispose();
   }
 }
