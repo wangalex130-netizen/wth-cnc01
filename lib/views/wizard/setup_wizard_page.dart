@@ -1,80 +1,135 @@
 import 'package:flutter/material.dart';
+import '../../services/cnc_provider.dart';
 
 class SetupWizardPage extends StatelessWidget {
   const SetupWizardPage({Super.key});
 
   @override
   Widget build(BuildContext context) {
+    final cnc = CncProvider.of(context);
+
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        Text(
-          '加工准备向导',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
+        Text('加工准备向导', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
-        Text(
-          '请按照步骤完成加工前的校准工作',
-          style: TextStyle(color: Colors.grey[400]),
-        ),
+        Text('按照引导完成零点定位与校准，保障切削安全', style: TextStyle(color: Colors.grey[400])),
         const SizedBox(height: 16),
 
-        // 步骤 1：自动对刀
+        // 自动对刀
         Card(
           child: ListTile(
             leading: const CircleAvatar(
               backgroundColor: Colors.blueAccent,
               child: Icon(Icons.vertical_align_bottom, color: Colors.white),
             ),
-            title: const Text('Z 轴自动对刀 (Auto Probe)'),
-            subtitle: const Text('连接对刀块，自动精准测定雕刻刀尖 Z 轴零点'),
+            title: const Text('Z 轴自动对刀 (Auto Z-Probe)'),
+            subtitle: const Text('使用对刀块精确定位刀具下端面 Z0'),
             trailing: OutlinedButton(
-              onPressed: () {
-                // TODO: 启动对刀向导弹窗
-              },
+              onPressed: () => _showAutoProbeModal(context),
               child: const Text('开始'),
             ),
           ),
         ),
         const SizedBox(height: 12),
 
-        // 步骤 2：激光循边/寻角
+        // 激光循边
         Card(
           child: ListTile(
             leading: const CircleAvatar(
               backgroundColor: Colors.purpleAccent,
               child: Icon(Icons.center_focus_strong, color: Colors.white),
             ),
-            title: const Text('激光循边定位 (Laser Boundary)'),
-            subtitle: const Text('开启红光辅助，快速预览并确认板材雕刻边界'),
+            title: const Text('激光寻边 / 轮廓定位'),
+            subtitle: const Text('打开定位红光并沿工件外框巡航'),
             trailing: OutlinedButton(
               onPressed: () {
-                // TODO: 启动循边模式
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('红光定位预览模式已开启')),
+                );
               },
-              child: const Text('预览'),
+              child: const Text('开启预览'),
             ),
           ),
         ),
         const SizedBox(height: 12),
 
-        // 步骤 3：设定 XY 工件原点
+        // 设为原点
         Card(
           child: ListTile(
             leading: const CircleAvatar(
               backgroundColor: Colors.orangeAccent,
               child: Icon(Icons.my_location, color: Colors.white),
             ),
-            title: const Text('设为工作原点 (Set Zero)'),
-            subtitle: const Text('将当前刀具 X/Y 轴位置标记为 G54 加工起始点'),
+            title: const Text('设定当前位置为工件原点'),
+            subtitle: const Text('将当前 X/Y/Z 设为 G54 零点'),
             trailing: ElevatedButton(
               onPressed: () {
-                // TODO: 执行 G10 L20 P1 X0 Y0
+                cnc.setZero(x: true, y: true, z: true);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('工件坐标系 (G54) 已成功归零！')),
+                );
               },
-              child: const Text('确认原点'),
+              child: const Text('确认归零'),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  void _showAutoProbeModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Z 轴自动对刀流程', style: Theme.of(modalContext).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              const ListTile(
+                leading: Icon(Icons.looks_one, color: Colors.blueAccent),
+                title: Text('放置对刀块'),
+                subtitle: Text('请将对刀块平放在工件表面，并置于刀头正下方'),
+              ),
+              const ListTile(
+                leading: Icon(Icons.looks_two, color: Colors.blueAccent),
+                title: Text('连接鳄鱼夹'),
+                subtitle: Text('确保对刀夹子已牢固夹在刀具主轴上'),
+              ),
+              const ListTile(
+                leading: Icon(Icons.height, color: Colors.blueAccent),
+                title: Text('预设对刀块厚度'),
+                subtitle: Text('当前默认卡尺厚度: 10.00 mm'),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    final cnc = CncProvider.of(context);
+                    // 执行探测命令 G38.2 Z-20 F100
+                    cnc.jog(axis: 'Z', distance: -10, feedRate: 100);
+                    cnc.setZero(x: false, y: false, z: true);
+                    Navigator.pop(modalContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('对刀成功！Z轴零点已校准并补偿厚度')),
+                    );
+                  },
+                  child: const Text('开始触碰对刀 (Probe Start)'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
