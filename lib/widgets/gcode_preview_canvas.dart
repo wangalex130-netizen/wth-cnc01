@@ -6,7 +6,7 @@ class GcodePreviewCanvas extends StatelessWidget {
   final Offset? currentToolPosition; // 当前实时刀具坐标 (X, Y)
 
   const GcodePreviewCanvas({
-    Super.key,
+    super.key,
     this.pathData,
     this.currentToolPosition,
   });
