@@ -7,6 +7,7 @@ import '../widgets/terminal_drawer.dart';
 import 'control/jog_control_page.dart';
 import 'wizard/setup_wizard_page.dart';
 import 'monitor/machining_monitor_page.dart';
+import 'settings/machine_settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Super.key});
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> {
     JogControlPage(),
     SetupWizardPage(),
     MachiningMonitorPage(),
+    MachineSettingsPage(),
   ];
 
   @override
@@ -58,7 +60,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           Column(
             children: [
-              // 1. 全局 ALARM 报警提示横幅
+              // 1. 全局 ALARM 报警横幅
               if (isAlarm)
                 Container(
                   color: Colors.red[900],
@@ -75,7 +77,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       TextButton(
                         style: TextButton.styleFrom(foregroundColor: Colors.white),
-                        onPressed: () => _showAlarmDialog(context, 1), // 默认示范代码 1
+                        onPressed: () => _showAlarmDialog(context, 1),
                         child: const Text('排查与解锁'),
                       ),
                     ],
@@ -92,7 +94,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
 
-          // 3. 底部悬浮收纳的终端日志控制台
+          // 3. 底部悬浮收纳终端抽屉
           const Align(
             alignment: Alignment.bottomCenter,
             child: TerminalDrawer(),
@@ -120,6 +122,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.play_circle_outline),
             selectedIcon: Icon(Icons.play_circle_fill),
             label: '实时加工',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: '参数设置',
           ),
         ],
       ),
@@ -158,7 +165,7 @@ class _HomePageState extends State<HomePage> {
           actions: [
             TextButton(
               onPressed: () {
-                cnc.resumeProcessing(); // 执行解锁 ($X) 并重置为 Idle
+                cnc.resumeProcessing();
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('已下发指令 [\$X]，设备成功解锁！')),
